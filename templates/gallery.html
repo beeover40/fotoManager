@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bildersammlung - Intelligente Suche</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* ... (gleiche CSS wie vorher - hier gekürzt für Übersicht) */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-text: #333;
+            --light-text: #fff;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark-text);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--light-text);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .search-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-box input, .search-box select, .search-box button {
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-box input {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box button {
+            background: var(--secondary-color);
+            color: var(--light-text);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .search-box button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .reset-link {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .reset-link:hover {
+            text-decoration: underline;
+        }
+
+        .results-info {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-weight: 500;
+            box-shadow: var(--shadow);
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .image-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .image-container {
+            position: relative;
+            height: 250px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .image-container:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            padding: 20px 15px 15px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .image-container:hover .image-overlay {
+            transform: translateY(0);
+        }
+
+        .overlay-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+
+        .overlay-description {
+            font-size: 0.9em;
+            line-height: 1.4;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .filename {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: var(--primary-color);
+            word-break: break-word;
+        }
+
+        .category-tag {
+            background: var(--secondary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .tags-section {
+            margin-top: 15px;
+        }
+
+        .tag-group {
+            margin-bottom: 12px;
+        }
+
+        .tag-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag-item {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        /* Lightbox Styles */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .close-lightbox {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+        }
+
+        .close-lightbox:hover {
+            color: #ccc;
+        }
+
+        .nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            font-size: 24px;
+            padding: 15px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .prev-button {
+            left: 20px;
+        }
+
+        .next-button {
+            right: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .image-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 15px;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-box input {
+                min-width: 100%;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .image-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-button {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .prev-button {
+                left: 10px;
+            }
+
+            .next-button {
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖼️ Bildersammlung</h1>
+            <p>Intelligente Suche mit KI-gestützter Analyse</p>
+        </header>
+
+        <!-- Hauptformular für beide Suchen -->
+        <form method="GET" action="/">
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" name="q" placeholder="🔍 Suchen in Beschreibungen, Tags und Kategorien..." value="{{ query }}">
+                    <button type="submit">Suchen</button>
+                </div>
+
+                <div class="filter-actions">
+                    <select name="category">
+                        <option value="">📂 Alle Kategorien</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if category_filter == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Filtern</button>
+                    {% if query or category_filter %}
+                        <a href="/" class="reset-link">🔄 Zurücksetzen</a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+
+        <div class="results-info">
+            📊 Gefundene Bilder: <strong>{{ results|length }}</strong>
+            {% if query %} | Suchbegriff: <strong>"{{ query }}"</strong>{% endif %}
+            {% if category_filter %} | Kategorie: <strong>{{ category_filter }}</strong>{% endif %}
+        </div>
+
+        <div class="image-grid">
+            {% for item in results %}
+            <div class="image-card" data-id="{{ item.id }}">
+                <div class="image-container" onclick="openLightbox({{ loop.index0 }})">
+                    {% if item.path %}
+                        <img src="/{{ item.path }}" alt="{{ item.filename }}" loading="lazy">
+                    {% else %}
+                        <div style="background: #f0f0f0; height: 100%; display: flex; align-items: center; justify-content: center;">
+                            <span>Kein Bild verfügbar</span>
+                        </div>
+                    {% endif %}
+
+                    <div class="image-overlay">
+                        <div class="overlay-title">{{ item.filename }}</div>
+                        <div class="overlay-description">{{ item.description }}</div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <div class="card-header">
+                        <div class="filename">{{ item.filename[:30] }}{% if item.filename|length > 30 %}...{% endif %}</div>
+                        <div class="category-tag">{{ item.category }}</div>
+                    </div>
+
+                    <div class="tags-section">
+                        {% if item.tags.numbers %}
+                        <div class="tag-group">
+                            <div class="tag-label">🔢 Nummern</div>
+                            <div class="tag-list">
+                                {% for number in item.tags.numbers %}
+                                    <span class="tag-item">{{ number }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if item.tags.colors %}
+                        <div class="tag-group">
+                            <div class="tag-label">🎨 Farben</div>
+                            <div class="tag-list">
+                                {% for color in item.tags.colors %}
+                                    <span class="tag-item">{{ color }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if item.tags.texts %}
+                        <div class="tag-group">
+                            <div class="tag-label">🔤 Texte</div>
+                            <div class="tag-list">
+                                {% for text in item.tags.texts %}
+                                    <span class="tag-item">{{ text }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+        <button class="close-lightbox" onclick="closeLightbox()">&times;</button>
+        <button class="nav-button prev-button" onclick="navigateLightbox(-1)">❮</button>
+        <div class="lightbox-content">
+            <img id="lightbox-img" class="lightbox-img" src="" alt="Vergrößertes Bild">
+        </div>
+        <button class="nav-button next-button" onclick="navigateLightbox(1)">❯</button>
+    </div>
+
+    <script>
+        let currentImageIndex = 0;
+        const imagePaths = [
+            {% for item in results %}
+                "{{ item.path }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        function openLightbox(index) {
+            currentImageIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+
+            if (imagePaths[index]) {
+                lightboxImg.src = '/' + imagePaths[index];
+                lightbox.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeLightbox(event) {
+            if (event && event.target !== event.currentTarget) return;
+            const lightbox = document.getElementById('lightbox');
+            lightbox.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function navigateLightbox(direction) {
+            currentImageIndex += direction;
+
+            if (currentImageIndex < 0) {
+                currentImageIndex = imagePaths.length - 1;
+            } else if (currentImageIndex >= imagePaths.length) {
+                currentImageIndex = 0;
+            }
+
+            const lightboxImg = document.getElementById('lightbox-img');
+            if (imagePaths[currentImageIndex]) {
+                lightboxImg.src = '/' + imagePaths[currentImageIndex];
+            }
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', function(e) {
+            const lightbox = document.getElementById('lightbox');
+            if (lightbox.style.display === 'flex') {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                } else if (e.key === 'ArrowLeft') {
+                    navigateLightbox(-1);
+                } else if (e.key === 'ArrowRight') {
+                    navigateLightbox(1);
+                }
+            }
+        });
+
+        // Close lightbox when clicking outside image
+        document.querySelector('.lightbox-content').addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    </script>
+</body>
+</html>

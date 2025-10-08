@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bildersuche</title>
+  <style>
+    body { font-family: sans-serif; }
+    .result { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+    img { max-width: 200px; }
+  </style>
+</head>
+<body>
+  <h1>Bildersuche</h1>
+  <form method="GET">
+    <input type="text" name="q" placeholder="Suchbegriff..." value="{{ query }}">
+    <button type="submit">Suchen</button>
+  </form>
+
+  {% for filename, path, category, desc in results %}
+    <div class="result">
+      <h3>{{ filename }}</h3>
+      <p><strong>Kategorie:</strong> {{ category }}</p>
+      <p><strong>Beschreibung:</strong> {{ desc }}</p>
+      <img src="/{{ path }}" alt="{{ filename }}">
+    </div>
+  {% endfor %}
+</body>
+</html>
